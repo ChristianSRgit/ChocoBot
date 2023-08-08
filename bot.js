@@ -4,6 +4,9 @@ const emoji = require('node-emoji');
 /* emojilib: provides a list of emojis and keyword search on top of it
 skin-tone: parses out base emojis from skin tones */
 
+const TelegramBot = require('node-telegram-bot-api');
+
+require('dotenv').config();
 
 const {
   telegramStart,
@@ -16,21 +19,9 @@ const {
     products
   } = require('./js/products');
 
-const TelegramBot = require('node-telegram-bot-api');
-const { GoogleSpreadsheet } = require('google-spreadsheet');
 
-require('dotenv').config();
 
 const botToken  = process.env.botToken;
-const googleSheetId = process.env.GOOGLE_SHEETS_ID;
-
-// import google sheets
-const credentials = process.env.GOOGLE_SHEETS_CREDENTIALS;
-
-
-const doc = new GoogleSpreadsheet(googleSheetId);
-
-console.log(doc)
 
 const bot = new TelegramBot(botToken, { polling: true });
 
