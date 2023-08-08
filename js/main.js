@@ -77,18 +77,24 @@ app.listen(6969, (req, res) => console.log(' running on http://localhost:6969'))
 bot.once('message', (msg) => {
   const chatId = msg.chat.id;
 
+  //guardo num
+  const phoneNumber = msg.contact ? msg.contact.phone_number : msg.from?.contact?.phone_number;
+
+
+  
   // Mensaje de bienvenida
   const welcomeMessage = `¡Hola ${msg.from.first_name}!\n \n${welcomeMessageHelp}`;
   
   // Enviar el mensaje de bienvenida
   bot.sendMessage(chatId, welcomeMessage);
   console.log(pc.bgGreen('WELCOME MESSAGE SENT'));
+  console.log(pc.bgYellow(phoneNumber))
 });
 
 
 
 // Handle the /start command to display available products
-bot.onText(/\/shop/, async (msg) => {  // /start
+bot.onText(/\/productos/, async (msg) => {  // /start
     const chatId = msg.chat.id;
 
     // Obtener los datos de Google Sheets y generar los botones
@@ -122,12 +128,39 @@ bot.onText(/\/shop/, async (msg) => {  // /start
     bot.sendMessage(chatId, telegramStart, {
         reply_markup: JSON.stringify(keyboard),
     });
+
+    // ...
+
+bot.on("callback_query", async query => {
+    const chatId = query.message.chat.id;
+    const productId = query.data; // ID del producto seleccionado
+
+    // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
+    const selectedProduct = productsSheetInfo.find(product => product[1] === productId);
+
+    if (selectedProduct) {
+        const productDetails = `
+             ${selectedProduct[0]}
+            Precio: ${selectedProduct[1]}
+            Mirá más en: ${selectedProduct[3]}
+        `;
+
+        // Enviar los detalles del producto como mensaje al chat
+        bot.sendMessage(chatId, productDetails);
+        console.log(pc.bgWhite('SHOWING DETAILS'))
+
+    }
+});
+
+// ...
+
+
     console.log(pc.bgGreen('SHOWING PRODUCTS'))
 });
 
 
 
-bot.onText(/\/help/, async (msg) => {
+bot.onText(/\/ayuda/, async (msg) => {
   const chatId = msg.chat.id;
 console.log(pc.bgBlue('HELP MSSG SENT'))
   // send a message to the chat acknowledging receipt of their message
