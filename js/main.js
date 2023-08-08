@@ -1,0 +1,137 @@
+const pc = require('picocolors');
+//console.log(pc.color/bgcolor('hello cosmos'))
+require('dotenv').config();
+const express = require('express');
+const TelegramBot = require('node-telegram-bot-api');
+
+
+const {
+    telegramStart,
+    welcomeMessageHelp,
+    ayuda,
+    } = require('./constants');
+  
+    const {
+      products
+    } = require('./products');
+  
+  
+  const botToken  = process.env.botToken;
+  
+  const bot = new TelegramBot(botToken, { polling: true });
+
+
+const { google } = require('googleapis');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+// https://www.npmjs.com/package/google-spreadsheet
+
+const app = express();
+
+app.get("/", async (req, res) => {
+
+   res.send('xd')
+    console.log(pc.bgCyan('        WORKS        '))
+
+});
+
+app.get("/write", async (req, res) => {
+
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "secret.json",
+        scopes: "https://www.googleapis.com/auth/spreadsheets",
+    });
+
+    //create client instance for auth
+    const client = await auth.getClient();
+
+    //instance of google sheets API
+
+    const googleSheets = google.sheets({ version: "v4", auth: client });
+
+    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+
+
+
+    //write row(s) to spreadsheet
+
+    await googleSheets.spreadsheets.values.append({
+        auth,
+        spreadsheetId,
+        range: "pagos!A:D",
+        valueInputOption: "USER_ENTERED",
+        resource: {
+            values: [
+                //client, ticket Nro, 
+                ["make a payment", "date of that payment", "123", "18/09/1995"]
+            ]
+        }
+    })
+
+
+});
+
+app.listen(6969, (req, res) => console.log(' running on http://localhost:6969'));
+//deberia hacer aca la auth, get con template string `${variable}` para traer los valores que quiero de las hojas y despues exportarlos
+
+// Manejar el primer mensaje del usuario para enviar el mensaje de bienvenida
+bot.once('message', (msg) => {
+  const chatId = msg.chat.id;
+
+  // Mensaje de bienvenida
+  const welcomeMessage = `¡Hola ${msg.from.first_name}!\n \n${welcomeMessageHelp}`;
+  
+  // Enviar el mensaje de bienvenida
+  bot.sendMessage(chatId, welcomeMessage);
+  console.log(pc.bgGreen('WELCOME MESSAGE SENT'));
+});
+
+
+
+// Handle the /start command to display available products
+bot.onText(/\/shop/, async (msg) => {  // /start
+    const chatId = msg.chat.id;
+
+    // Obtener los datos de Google Sheets y generar los botones
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "secret.json",
+        scopes: "https://www.googleapis.com/auth/spreadsheets",
+    });
+
+    const client = await auth.getClient();
+    const googleSheets = google.sheets({ version: "v4", auth: client });
+    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+
+    const getRows = await googleSheets.spreadsheets.values.get({
+        auth,
+        spreadsheetId,
+        range: "stock&price!A2:D6",
+    });
+
+    const productsSheetInfo = getRows.data.values;
+
+    const buttonsRow = productsSheetInfo.map(product => ({
+        text: product[0], // Usar el primer valor (nombre del producto) como texto del botón
+        callback_data: product[1], // Usar el segundo valor (ID del producto) como callback_data
+    }));
+
+    const keyboard = {
+        inline_keyboard: [buttonsRow],
+    }
+
+    // Enviar el mensaje con el teclado inline a los usuarios
+    bot.sendMessage(chatId, telegramStart, {
+        reply_markup: JSON.stringify(keyboard),
+    });
+    console.log(pc.bgGreen('SHOWING PRODUCTS'))
+});
+
+
+
+bot.onText(/\/help/, async (msg) => {
+  const chatId = msg.chat.id;
+console.log(pc.bgBlue('HELP MSSG SENT'))
+  // send a message to the chat acknowledging receipt of their message
+  bot.sendMessage(chatId, `${ayuda}`);
+});
+
+

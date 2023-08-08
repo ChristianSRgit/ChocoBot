@@ -1,8 +1,5 @@
 const pc = require('picocolors');
 //console.log(pc.color/bgcolor('hello cosmos'))
-const emoji = require('node-emoji');
-/* emojilib: provides a list of emojis and keyword search on top of it
-skin-tone: parses out base emojis from skin tones */
 
 const TelegramBot = require('node-telegram-bot-api');
 
@@ -12,13 +9,11 @@ const {
   telegramStart,
   welcomeMessageHelp,
   ayuda,
-  blank
   } = require('./js/constants');
 
   const {
     products
   } = require('./js/products');
-
 
 
 const botToken  = process.env.botToken;
