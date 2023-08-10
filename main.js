@@ -9,16 +9,18 @@ const {
     telegramStart,
     welcomeMessageHelp,
     ayuda,
-    } = require('./constants');
-  
-    const {
-      products
-    } = require('./products');
-  
-  
-  const botToken  = process.env.botToken;
-  
-  const bot = new TelegramBot(botToken, { polling: true });
+    cant,
+    blank,
+} = require('./js/constants');
+
+const {
+    products
+} = require('./js/products');
+
+
+const botToken = process.env.botToken;
+
+const bot = new TelegramBot(botToken, { polling: true });
 
 
 const { google } = require('googleapis');
@@ -29,7 +31,7 @@ const app = express();
 
 app.get("/", async (req, res) => {
 
-   res.send('xd')
+    res.send('xd')
     console.log(pc.bgCyan('        WORKS        '))
 
 });
@@ -75,20 +77,20 @@ app.listen(6969, (req, res) => console.log(' running on http://localhost:6969'))
 
 // Manejar el primer mensaje del usuario para enviar el mensaje de bienvenida
 bot.once('message', (msg) => {
-  const chatId = msg.chat.id;
+    const chatId = msg.chat.id;
 
-  //guardo num
-  const phoneNumber = msg.contact ? msg.contact.phone_number : msg.from?.contact?.phone_number;
+    //guardo num
+    const phoneNumber = msg.contact ? msg.contact.phone_number : msg.from?.contact?.phone_number;
 
 
-  
-  // Mensaje de bienvenida
-  const welcomeMessage = `¡Hola ${msg.from.first_name}!\n \n${welcomeMessageHelp}`;
-  
-  // Enviar el mensaje de bienvenida
-  bot.sendMessage(chatId, welcomeMessage);
-  console.log(pc.bgGreen('WELCOME MESSAGE SENT'));
-  console.log(pc.bgYellow(phoneNumber))
+
+    // Mensaje de bienvenida
+    const welcomeMessage = `¡Hola ${msg.from.first_name}!\n \n${welcomeMessageHelp}`;
+
+    // Enviar el mensaje de bienvenida
+    bot.sendMessage(chatId, welcomeMessage);
+    console.log(pc.bgGreen('WELCOME MESSAGE SENT'));
+    console.log(pc.bgYellow(phoneNumber))
 });
 
 
@@ -131,40 +133,72 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
     // ...
 
-bot.on("callback_query", async query => {
-    const chatId = query.message.chat.id;
-    const productId = query.data; // ID del producto seleccionado
+    bot.on("callback_query", async query => {
+        const chatId = query.message.chat.id;
+        const productId = query.data; // ID del producto seleccionado
 
-    // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
-    const selectedProduct = productsSheetInfo.find(product => product[1] === productId);
+        // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
+        const selectedProduct = productsSheetInfo.find(product => product[1] === productId);
 
-    if (selectedProduct) {
-        const productDetails = `
+        if (selectedProduct) {
+            const productDetails = `
              ${selectedProduct[0]}
             Precio: ${selectedProduct[1]}
             Mirá más en: ${selectedProduct[3]}
-        `;
+         `;
 
-        // Enviar los detalles del producto como mensaje al chat
-        bot.sendMessage(chatId, productDetails);
-        console.log(pc.bgWhite('SHOWING DETAILS'))
+            // Enviar los detalles del producto como mensaje al chat
+            bot.sendMessage(chatId, productDetails);
+            console.log(pc.bgWhite('SHOWING DETAILS'));
 
+
+
+            // Enviar la cantidad de productos para seleccionar
+            const quantityKeyboard = {
+                inline_keyboard: [
+                    // Crear una fila de botones del 1 al 5
+                    Array.from({ length: 5 }, (_, index) => ({
+                        text: (index + 1).toString(),
+                        callback_data: `quantity_${index + 1}`,
+                    })),
+                    // Crear otra fila de botones del 6 al 10
+                    Array.from({ length: 5 }, (_, index) => ({
+                        text: (index + 6).toString(),
+                        callback_data: `quantity_${index + 6}`,
+                    })),
+                ],
+            }
+
+            bot.sendMessage(chatId, cant, {
+                reply_markup: JSON.stringify(quantityKeyboard),
+            });
+
+        };
+        console.log(pc.bgRed('SHOWING QUANTITY SELECTION'))
+    })
+});
+
+// Manejar la selección de cantidad
+bot.on("callback_query", async query => {
+    const chatId = query.message.chat.id;
+    const callbackData = query.data; // Datos del callback
+
+    if (callbackData.startsWith("quantity_")) {
+        const quantity = parseInt(callbackData.split("_")[1]); // Extraer la cantidad seleccionada
+
+        // Ahora puedes hacer lo que quieras con la cantidad seleccionada, como procesar el pedido, etc.
+        // Por ejemplo, enviar un mensaje con la cantidad seleccionada
+        bot.sendMessage(chatId, `Seleccionaste ${quantity} unidades.`);
+        console.log(pc.bgMagenta('QUANTITY SELECTED: ' + quantity))
     }
 });
 
-// ...
-
-
-    console.log(pc.bgGreen('SHOWING PRODUCTS'))
-});
-
-
 
 bot.onText(/\/ayuda/, async (msg) => {
-  const chatId = msg.chat.id;
-console.log(pc.bgBlue('HELP MSSG SENT'))
-  // send a message to the chat acknowledging receipt of their message
-  bot.sendMessage(chatId, `${ayuda}`);
+    const chatId = msg.chat.id;
+    console.log(pc.bgBlue('HELP MSSG SENT'))
+    // send a message to the chat acknowledging receipt of their message
+    bot.sendMessage(chatId, `${ayuda}`);
 });
 
 
