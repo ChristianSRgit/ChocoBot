@@ -24,8 +24,6 @@ const bot = new TelegramBot(botToken, { polling: true });
 
 
 const { google } = require('googleapis');
-const { GoogleSpreadsheet } = require('google-spreadsheet');
-// https://www.npmjs.com/package/google-spreadsheet
 
 const app = express();
 
@@ -79,18 +77,12 @@ app.listen(6969, (req, res) => console.log(' running on http://localhost:6969'))
 bot.once('message', (msg) => {
     const chatId = msg.chat.id;
 
-    //guardo num
-    const phoneNumber = msg.contact ? msg.contact.phone_number : msg.from?.contact?.phone_number;
-
-
-
     // Mensaje de bienvenida
     const welcomeMessage = `¡Hola ${msg.from.first_name}!\n \n${welcomeMessageHelp}`;
 
     // Enviar el mensaje de bienvenida
     bot.sendMessage(chatId, welcomeMessage);
     console.log(pc.bgGreen('WELCOME MESSAGE SENT'));
-    console.log(pc.bgYellow(phoneNumber))
 });
 
 
@@ -117,9 +109,9 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
     const productsSheetInfo = getRows.data.values;
 
-    const buttonsRow = productsSheetInfo.map(product => ({
+    const buttonsRow = productsSheetInfo.map((product, index) => ({
         text: product[0], // Usar el primer valor (nombre del producto) como texto del botón
-        callback_data: product[1], // Usar el segundo valor (ID del producto) como callback_data
+        callback_data: index, // Usar el segundo valor (ID del producto) como callback_data
     }));
 
     const keyboard = {
@@ -138,7 +130,7 @@ bot.onText(/\/productos/, async (msg) => {  // /start
         const productId = query.data; // ID del producto seleccionado
 
         // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
-        const selectedProduct = productsSheetInfo.find(product => product[1] === productId);
+        const selectedProduct = productsSheetInfo.find((_, index) => index == productId);
 
         if (selectedProduct) {
             const productDetails = `
@@ -169,12 +161,15 @@ bot.onText(/\/productos/, async (msg) => {  // /start
                 ],
             }
 
-            bot.sendMessage(chatId, cant, {
-                reply_markup: JSON.stringify(quantityKeyboard),
-            });
-
+            setTimeout(
+                function() 
+                {
+                    bot.sendMessage(chatId, cant, {
+                        reply_markup: JSON.stringify(quantityKeyboard),
+                    });
+                    console.log(pc.bgRed('SHOWING QUANTITY SELECTION'))
+                }, 500);
         };
-        console.log(pc.bgRed('SHOWING QUANTITY SELECTION'))
     })
 });
 
