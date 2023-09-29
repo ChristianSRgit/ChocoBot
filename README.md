@@ -1,4 +1,4 @@
-# ChocoBot🤖
+﻿# ChocoBot🤖
 
 **Chatbot de telegram 🤖**
 
@@ -22,3 +22,6 @@ Originalmente pensado y diseñado para una empresespecíficaca de chocolateria, 
 
 - Metricas on demmand 📈
 	> Consultá por tus productos más vendidos, métodos de pago más utilizados o zonas de envio mas habituales
+
+
+
