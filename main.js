@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 
+const Product = require('./js/product');
 
 const {
     telegramStart,
@@ -13,9 +14,7 @@ const {
     blank,
 } = require('./js/constants');
 
-const {
-    products
-} = require('./js/products');
+
 
 
 const botToken = process.env.botToken;
@@ -70,7 +69,7 @@ app.get("/write", async (req, res) => {
 
 });
 
-app.listen(6969, (req, res) => console.log(' running on http://localhost:6969'));
+app.listen(6969, (req, res) => console.log(pc.bgGreen(' running on http://localhost:6969')));
 //deberia hacer aca la auth, get con template string `${variable}` para traer los valores que quiero de las hojas y despues exportarlos
 
 // Manejar el primer mensaje del usuario para enviar el mensaje de bienvenida
@@ -86,12 +85,13 @@ bot.once('message', (msg) => {
 });
 
 
+let selectedProduct = null;
 
-// Handle the /start command to display available products
+// Handle the /productos command to display available products
 bot.onText(/\/productos/, async (msg) => {  // /start
     const chatId = msg.chat.id;
 
-    // Obtener los datos de Google Sheets y generar los botones
+    // Obtener los datos de Google Sheets 
     const auth = new google.auth.GoogleAuth({
         keyFile: "secret.json",
         scopes: "https://www.googleapis.com/auth/spreadsheets",
@@ -104,40 +104,56 @@ bot.onText(/\/productos/, async (msg) => {  // /start
     const getRows = await googleSheets.spreadsheets.values.get({
         auth,
         spreadsheetId,
-        range: "stock&price!A2:D6",
+        range: "stock&price!A2:E6",
     });
 
     const productsSheetInfo = getRows.data.values;
 
     const buttonsRow = productsSheetInfo.map((product, index) => ({
-        text: product[0], // Usar el primer valor (nombre del producto) como texto del botón
+        text: product[1], // Usar el primer valor (nombre del producto) como texto del botón
         callback_data: index, // Usar el segundo valor (ID del producto) como callback_data
+
     }));
 
     const keyboard = {
         inline_keyboard: [buttonsRow],
+
     }
+    console.log(pc.bgBlack("SHOWING PRODUCTS"))
+
 
     // Enviar el mensaje con el teclado inline a los usuarios
     bot.sendMessage(chatId, telegramStart, {
         reply_markup: JSON.stringify(keyboard),
+
     });
 
     // ...
 
     bot.on("callback_query", async query => {
-        const chatId = query.message.chat.id;
-        const productId = query.data; // ID del producto seleccionado
+        let chatId = query.message.chat.id;
+        let productId = query.data; // ID del producto seleccionado
 
         // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
-        const selectedProduct = productsSheetInfo.find((_, index) => index == productId);
+            selectedProduct = productsSheetInfo.find((_, index) => index == productId);
+
 
         if (selectedProduct) {
-            const productDetails = `
-             ${selectedProduct[0]}
-            Precio: ${selectedProduct[1]}
-            Mirá más en: ${selectedProduct[3]}
-         `;
+
+            const productName = selectedProduct[1];
+            const productPrice = selectedProduct[2];
+            const productStock = selectedProduct[3];
+            const productLink = selectedProduct[4];
+
+            const product = new Product(productName, productPrice, productStock, productLink);
+
+
+
+           let productDetails = `
+             ${product.name}
+            Precio: ${product.price}
+            Mirá más en: ${product.link}
+         `; 
 
             // Enviar los detalles del producto como mensaje al chat
             bot.sendMessage(chatId, productDetails);
@@ -162,31 +178,50 @@ bot.onText(/\/productos/, async (msg) => {  // /start
             }
 
             setTimeout(
-                function() 
-                {
+                function () {
                     bot.sendMessage(chatId, cant, {
                         reply_markup: JSON.stringify(quantityKeyboard),
                     });
                     console.log(pc.bgRed('SHOWING QUANTITY SELECTION'))
                 }, 500);
         };
+        // Manejar la selección de cantidad
+        bot.on("callback_query", async query => {
+            const chatId = query.message.chat.id;
+            const callbackData = query.data; // Datos del callback
+            let selectedProduct = productsSheetInfo.find((_, index) => index == productId);
+
+            if (selectedProduct) {
+
+                const productName = selectedProduct[1];
+                const productPrice = parseFloat(selectedProduct[2].replace(".",""));
+                const productStock = parseFloat(selectedProduct[3].replace(".",""));
+                const productLink = selectedProduct[4];
+    
+                const product = new Product(productName, productPrice, productStock, productLink);
+
+                if (callbackData.startsWith("quantity_")) {
+                    const quantity = parseInt(callbackData.split("_")[1]); // Extraer la cantidad seleccionada
+    
+                    // Ahora puedes hacer lo que quieras con la cantidad seleccionada, como procesar el pedido, etc.
+                    let calcPriceQuantity = product.price * quantity
+                    // Por ejemplo, enviar un mensaje con la cantidad seleccionada
+                    bot.sendMessage(chatId,
+                        `Seleccionaste ${quantity} unidades.\n
+                        El total es de $${calcPriceQuantity}`);
+                    console.log(pc.bgMagenta('QUANTITY SELECTED: ' + quantity))
+                    
+                }
+            }
+
+            
+
+            
+        });
     })
 });
 
-// Manejar la selección de cantidad
-bot.on("callback_query", async query => {
-    const chatId = query.message.chat.id;
-    const callbackData = query.data; // Datos del callback
 
-    if (callbackData.startsWith("quantity_")) {
-        const quantity = parseInt(callbackData.split("_")[1]); // Extraer la cantidad seleccionada
-
-        // Ahora puedes hacer lo que quieras con la cantidad seleccionada, como procesar el pedido, etc.
-        // Por ejemplo, enviar un mensaje con la cantidad seleccionada
-        bot.sendMessage(chatId, `Seleccionaste ${quantity} unidades.`);
-        console.log(pc.bgMagenta('QUANTITY SELECTED: ' + quantity))
-    }
-});
 
 
 bot.onText(/\/ayuda/, async (msg) => {

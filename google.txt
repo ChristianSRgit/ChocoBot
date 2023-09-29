@@ -1,2 +1,0 @@
-Para usar esta clave en tu aplicación, transfiérela con el parámetro key=API_KEY.
-AIzaSyDCycznCHojAHnfea6XIKtA9QoFeggjozI

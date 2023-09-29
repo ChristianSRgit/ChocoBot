@@ -5,13 +5,13 @@
 
 ## Descripción
 
-Originalmente pensado y diseñado para una empresespecíficaca de chocolateria, pero actualmente trabajando mientras se desarrolla para que cualquiera pueda integrarlo a su negocio 💸
+Originalmente pensado y diseñado para una empresa específica de chocolateria, pero actualmente trabajando mientras se desarrolla para que cualquiera pueda integrarlo a su negocio 💸
 
 
 - Ventas a usuario final 👨‍💼
 	> Implementacion de pagos
 
-- Majeo de stock 🏢
+- Manejo de stock 🏢
 	> Permisos por usuario para administrar el stock de manera rapida
 
 - Cotizaciones por cuestionario 📝
