@@ -1,0 +1,45 @@
+- Ventas a usuario final 👨‍💼
+☐ welcome msj
+☐ /start
+☐ /help
+☐ botones o comando "ok" y "atras" en zonas criticas
+☐ boton "atras" en todo momento
+☐ display productos en botonera
+☐ display detalle de producto y detalles
+☐ display cantidades en botonera para elegir
+☐ mostrar cantidades y calc precio producto x cantidad
+☐ MSJ DISCLAIMER sobre zona de envio, costos y dias de reparto
+☐ consultar si es para GBA o Zona Norte (display botonera)
+
+
+	> Implementacion de pagos
+
+    ☐ display metodo de pago (efectivo/trasnfer)
+        ☐ si es efectivo señar un 10% (mostrar CVU/ALIAS)
+        ☐ si es transfer mostrar CVU/ALIAS y pedir comprobante de pago/captura
+        ☐ validar el pago en caso de transfer
+        ☐ enviar la captura al sheets
+        ☐ descontar unidades del stock en el sheets
+        ☐ dar alerta de que se tomo el pedido correctamente y repetir los datos del mismo
+        ☐ enviar msj a telefono personal (o grupo) dando aviso de venta con:
+                                                                            *nombre cliente
+                                                                            *pedido
+                                                                            *metodo de pago
+                                                                            *valor de la venta
+                                                                            *direccion
+                                                                            *dia de envio
+     
+
+
+- Manejo de stock 🏢
+	> Permisos por usuario para administrar el stock de manera rapida
+
+- Cotizaciones por cuestionario 📝
+	> Calculadora de costos a base de preguntas
+
+- Track de ventas 💹
+	> Consulta tus ventas hasta el momento  en plazos semanales/quincenales/mensuales
+
+- Metricas on demmand 📈
+	> Consultá por tus productos más vendidos, métodos de pago más utilizados o zonas de envio mas habituales
+
