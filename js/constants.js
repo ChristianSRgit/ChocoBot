@@ -3,6 +3,7 @@ const welcomeMessageHelp = 'Bienvenido a nuestra tienda  🍫🛒🐷\n \nSelecc
 const ayuda = 'texto supergenial de ayuda de chocoloc0s';
 const cant = 'Selecciona la cantidad que deseas comprar:';
 const blank = ' ';
+const enviosData ='Nuestros envios se realizan los dias Viernes para CABA y los Sabados para Zona Norte 🏍️';
 
 
 module.exports = {
@@ -11,5 +12,5 @@ module.exports = {
     ayuda,
     cant,
     blank,
-    
+    enviosData
 }

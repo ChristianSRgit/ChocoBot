@@ -4,7 +4,8 @@ require('dotenv').config();
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 
-const Product = require('./js/product');
+const Product = require('./js/constructors/product');
+const Venta = require('./js/constructors/venta');
 
 const {
     telegramStart,
@@ -12,6 +13,7 @@ const {
     ayuda,
     cant,
     blank,
+    enviosData
 } = require('./js/constants');
 
 
@@ -128,14 +130,13 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
     });
 
-    // ...
 
     bot.on("callback_query", async query => {
         let chatId = query.message.chat.id;
         let productId = query.data; // ID del producto seleccionado
 
         // Buscar el producto seleccionado en los datos obtenidos de Google Sheets
-            selectedProduct = productsSheetInfo.find((_, index) => index == productId);
+        selectedProduct = productsSheetInfo.find((_, index) => index == productId);
 
 
         if (selectedProduct) {
@@ -147,19 +148,15 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
             const product = new Product(productName, productPrice, productStock, productLink);
 
-
-
-           let productDetails = `
+            let productDetails = `
              ${product.name}
             Precio: ${product.price}
             Mirá más en: ${product.link}
-         `; 
+         `;
 
             // Enviar los detalles del producto como mensaje al chat
             bot.sendMessage(chatId, productDetails);
             console.log(pc.bgWhite('SHOWING DETAILS'));
-
-
 
             // Enviar la cantidad de productos para seleccionar
             const quantityKeyboard = {
@@ -185,6 +182,7 @@ bot.onText(/\/productos/, async (msg) => {  // /start
                     console.log(pc.bgRed('SHOWING QUANTITY SELECTION'))
                 }, 500);
         };
+
         // Manejar la selección de cantidad
         bot.on("callback_query", async query => {
             const chatId = query.message.chat.id;
@@ -194,30 +192,45 @@ bot.onText(/\/productos/, async (msg) => {  // /start
             if (selectedProduct) {
 
                 const productName = selectedProduct[1];
-                const productPrice = parseFloat(selectedProduct[2].replace(".",""));
-                const productStock = parseFloat(selectedProduct[3].replace(".",""));
+                const productPrice = parseFloat(selectedProduct[2].replace(".", ""));
+                const productStock = parseFloat(selectedProduct[3].replace(".", ""));
                 const productLink = selectedProduct[4];
-    
+
                 const product = new Product(productName, productPrice, productStock, productLink);
 
                 if (callbackData.startsWith("quantity_")) {
                     const quantity = parseInt(callbackData.split("_")[1]); // Extraer la cantidad seleccionada
-    
+
                     // Ahora puedes hacer lo que quieras con la cantidad seleccionada, como procesar el pedido, etc.
                     let calcPriceQuantity = product.price * quantity
                     // Por ejemplo, enviar un mensaje con la cantidad seleccionada
                     bot.sendMessage(chatId,
-                        `Seleccionaste ${quantity} unidades.\n
-                        El total es de $${calcPriceQuantity}`);
+                        `Seleccionaste ${quantity} unidades.\n El total es de $${calcPriceQuantity} \n \n ${enviosData}`);
                     console.log(pc.bgMagenta('QUANTITY SELECTED: ' + quantity))
-                    
+
+                    const ElegirZonaEnvio = {
+                        inline_keyboard: [
+                            [
+                                { text: 'CABA', callback_data: 'entrega_CABA' },
+                                { text: 'Zona Norte', callback_data: 'entrega_ZonaNorte' }
+                            ]
+                        ]
+                    };
+
+                    setTimeout(
+                        function () {
+                            bot.sendMessage(chatId, "¿De que zona sos? 🏡", {
+                                reply_markup: JSON.stringify(ElegirZonaEnvio)
+                            });
+                            console.log(pc.bgBlue('Eligiendo zona'))
+
+                        }, 500);
+
                 }
+
             }
-
-            
-
-            
         });
+
     })
 });
 

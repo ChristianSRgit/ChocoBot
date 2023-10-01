@@ -1,15 +1,15 @@
 - Ventas a usuario final 👨‍💼
 ☐ welcome msj
 ☐ /start
-☐ /help
+✔ /help @done (10/1/2023, 1:17:04 PM)
 ☐ botones o comando "ok" y "atras" en zonas criticas
 ☐ boton "atras" en todo momento
-☐ display productos en botonera
-☐ display detalle de producto y detalles
-☐ display cantidades en botonera para elegir
-☐ mostrar cantidades y calc precio producto x cantidad
-☐ MSJ DISCLAIMER sobre zona de envio, costos y dias de reparto
-☐ consultar si es para GBA o Zona Norte (display botonera)
+✔ display productos en botonera @done (10/1/2023, 1:16:55 PM)
+✔ display detalle de producto y detalles @done (10/1/2023, 1:16:58 PM)
+✔ display cantidades en botonera para elegir @done (10/1/2023, 1:16:45 PM)
+✔ mostrar cantidades y calc precio producto x cantidad @done (10/1/2023, 1:17:07 PM)
+✔ MSJ DISCLAIMER sobre zona de envio, costos y dias de reparto @done (10/1/2023, 2:39:43 PM)
+✔ consultar si es para GBA o Zona Norte (display botonera) @done (10/1/2023, 2:39:46 PM)
 
 
 	> Implementacion de pagos
