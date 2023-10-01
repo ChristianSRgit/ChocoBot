@@ -22,6 +22,7 @@ const {
 const botToken = process.env.botToken;
 
 const bot = new TelegramBot(botToken, { polling: true });
+const cvu = process.env.CVU;
 
 
 const { google } = require('googleapis');
@@ -208,31 +209,107 @@ bot.onText(/\/productos/, async (msg) => {  // /start
                         `Seleccionaste ${quantity} unidades.\n El total es de $${calcPriceQuantity} \n \n ${enviosData}`);
                     console.log(pc.bgMagenta('QUANTITY SELECTED: ' + quantity))
 
-                    const ElegirZonaEnvio = {
-                        inline_keyboard: [
-                            [
-                                { text: 'CABA', callback_data: 'entrega_CABA' },
-                                { text: 'Zona Norte', callback_data: 'entrega_ZonaNorte' }
-                            ]
-                        ]
-                    };
-
-                    setTimeout(
-                        function () {
-                            bot.sendMessage(chatId, "¿De que zona sos? 🏡", {
-                                reply_markup: JSON.stringify(ElegirZonaEnvio)
-                            });
-                            console.log(pc.bgBlue('Eligiendo zona'))
-
-                        }, 500);
+                    deliveryZone();
 
                 }
 
             }
         });
 
-    })
-});
+        async function deliveryZone() {
+
+            const ElegirZonaEnvio = {
+                inline_keyboard: [
+                    [
+                        { text: 'CABA', callback_data: 'entrega_CABA' },
+                        { text: 'Zona Norte', callback_data: 'entrega_ZonaNorte' }
+                    ]
+                ]
+            };
+
+            setTimeout(
+                function () {
+                    bot.sendMessage(chatId, "¿De que zona sos? 🏡", {
+                        reply_markup: JSON.stringify(ElegirZonaEnvio)
+                    });
+
+                    console.log(pc.bgBlue('Eligiendo zona'))
+
+                    // Manejar las respuestas a las opciones de envío
+                    bot.on('callback_query', (query) => {
+                        let entregaMensaje = '';
+                        const chatId = query.message.chat.id;
+                        const option = query.data;
+
+                        if (option === 'entrega_CABA') {
+                            entregaMensaje = 'Su pedido será entregado en CABA el día Viernes';
+                        } else if (option === 'entrega_ZonaNorte') {
+                            entregaMensaje = 'Su pedido será entregado en Zona Norte el día Sábado';
+                        }
+
+                        // Enviar el mensaje sobre la entrega estimada
+                        bot.sendMessage(chatId, `${entregaMensaje}`);
+                        console.log(pc.bgRed(`Eligieron ${option} `))
+
+                       /*  if (option != null) {
+                            PaymentMethod()
+
+                        } */
+                    });
+                },
+                500);
+        }//Delivery
+
+/*         function PaymentMethod() {
+            console.log('paymentMethod ok')
+
+            setTimeout(
+                function () {
+
+                    bot.sendMessage(chatId, '¿Cómo querès pagar tu pedido?', {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [
+                                    { text: 'Efectivo', callback_data: 'pago_efectivo' },
+                                    { text: 'Transferencia', callback_data: 'pago_transferencia' }
+                                ]
+                            ]
+                        })
+                    });
+
+                    bot.on('callback_query', (query) => {
+                        const chatId = query.message.chat.id;
+                        const metodoPago = query.data;
+                
+                        // Aquí puedes realizar acciones basadas en el método de pago seleccionado
+                        let metodoPagoMensaje = 'xd';
+                        console.log(pc.bgMagenta(`METODO DE PAGO ELEGIDO ${metodoPago}`))
+                        if (metodoPago === 'pago_efectivo') {
+                            metodoPagoMensaje = 'Elegiste pagar en efectivo. Por favor, prepara el pago en efectivo para el momento de la entrega.';
+                        } else if (metodoPago === 'pago_transferencia') {
+                            metodoPagoMensaje = `Elegiste pagar por transferencia. Te proporcionaremos los detalles bancarios para la transferencia. \n
+                            CVU -> ${cvu}`;
+                        }
+                
+                        // Enviar el mensaje sobre el método de pago seleccionado
+                        bot.sendMessage(chatId, `${metodoPagoMensaje}`);
+                    });
+
+
+
+
+
+                }, 500);
+        } //PAYMENT */
+
+
+    }) //selected products
+
+
+
+
+
+}); //FIN productos
 
 
 
