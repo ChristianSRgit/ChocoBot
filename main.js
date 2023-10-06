@@ -8,6 +8,7 @@ const Product = require('./js/constructors/product');
 const Venta = require('./js/constructors/venta');
 
 const { getGoogleSheetsInstance } = require('./js/googleSheets');
+const {ActualizarStockEnGoogleSheets,ActualizarPrecioEnGoogleSheets} = require('./js/updateStockAndPrice');
 
 const {
     telegramStart,
@@ -33,7 +34,7 @@ const app = express();
 
 app.get("/", async (req, res) => {
 
-    res.send('xd')
+    res.send('Bot Chocoloc0s')
     console.log(pc.bgCyan('        WORKS        '))
 
 });
@@ -104,7 +105,7 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
     const client = await auth.getClient();
     const googleSheets = google.sheets({ version: "v4", auth: client });
-    
+
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
     const getRows = await googleSheets.spreadsheets.values.get({
@@ -254,10 +255,10 @@ bot.onText(/\/productos/, async (msg) => {  // /start
                         bot.sendMessage(chatId, `${entregaMensaje}`);
                         console.log(pc.bgRed(`Eligieron ${option} `))
 
-                       /*  if (option != null) {
-                            PaymentMethod() -> create function to call it later
-
-                        } */
+                        /*  if (option != null) {
+                             PaymentMethod() -> create function to call it later
+ 
+                         } */
                     });
                 },
                 500);
@@ -277,6 +278,8 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
 bot.onText(/\/stock/, async (msg) => {  // /start
     const chatId = msg.chat.id;
+    console.log(pc.bgWhite('STOCK SECTION'))
+
 
     // Obtener los datos de Google Sheets 
     const auth = new google.auth.GoogleAuth({
@@ -286,7 +289,7 @@ bot.onText(/\/stock/, async (msg) => {  // /start
 
     const client = await auth.getClient();
     const googleSheets = google.sheets({ version: "v4", auth: client });
-    
+
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
     const getRows = await googleSheets.spreadsheets.values.get({
@@ -294,23 +297,71 @@ bot.onText(/\/stock/, async (msg) => {  // /start
         spreadsheetId,
         range: "stock&price!A2:E6",
     });
-})
+
+    const productsSheetInfo = getRows.data.values.map(product => {
+        return new Product(product[1], product[2], product[3], product[4]);
+    });
+    const buttonsRow = productsSheetInfo.map((product, index) => ({
+        text: product.name, // Usar el nombre del producto como texto del botón
+        callback_data: `stock_${index}`, // Usar el índice del producto como callback_data con un prefijo "stock_"
+    }));
+
+
+    const keyboard = {
+        inline_keyboard: [buttonsRow],
+    };
+
+
+    // Enviar el mensaje con el teclado inline de productos
+    bot.sendMessage(chatId, 'Selecciona un producto para actualizar el stock:', {
+        reply_markup: JSON.stringify(keyboard),
+    });
+
+    // Manejar la selección de un producto para actualizar el stock
+    bot.on("callback_query", async query => {
+        const chatId = query.message.chat.id;
+
+        let productId = query.data.replace("stock_", ""); // Eliminar el prefijo "stock_"
+        let selectedProduct = productsSheetInfo[productId]; // Obtener el producto seleccionado
+
+         
+
+          // Preguntar al usuario el nuevo valor de stock
+        bot.sendMessage(chatId, `Escribe el nuevo stock para el producto seleccionado ${selectedProduct.name}:`);
+
+        // Manejar la respuesta del usuario
+        bot.onText(/^(\d+)$/, async (msg, match) => {
+            const newStock = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
+
+        console.log(pc.bgBlue('Actualizando Stock'))
+           
+
+            ActualizarStockEnGoogleSheets(selectedProduct, newStock)
+
+            bot.sendMessage(chatId, `Stock actualizado para el producto ${selectedProduct.name}: ${newStock}`);
+        });
+
+       
+
+    })
+
+    }) // fin /stock
 
 
 
 
-bot.onText(/\/ayuda/, async (msg) => {
-    const chatId = msg.chat.id;
-    console.log(pc.bgBlue('HELP MSSG SENT'))
-    // send a message to the chat acknowledging receipt of their message
-    bot.sendMessage(chatId, `${ayuda}`);
-});
+    bot.onText(/\/ayuda/, async (msg) => {
+        const chatId = msg.chat.id;
+        console.log(pc.bgBlue('HELP MSSG SENT'))
+        // send a message to the chat acknowledging receipt of their message
+        bot.sendMessage(chatId, `${ayuda}`);
+    });
 
 
-bot.onText(/\/envios/, async (msg) => {
-    const chatId = msg.chat.id;
-    console.log(pc.bgBlue('DELI MSSG SENT'))
-    // send a message to the chat acknowledging receipt of their message
-    bot.sendMessage(chatId, `${enviosData}`);
-});
+    bot.onText(/\/envios/, async (msg) => {
+        const chatId = msg.chat.id;
+        console.log(pc.bgBlue('DELI MSSG SENT'))
+        // send a message to the chat acknowledging receipt of their message
+        bot.sendMessage(chatId, `${enviosData}`);
+    });
 
