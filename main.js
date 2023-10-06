@@ -7,6 +7,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const Product = require('./js/constructors/product');
 const Venta = require('./js/constructors/venta');
 
+const { getGoogleSheetsInstance } = require('./js/googleSheets');
+
 const {
     telegramStart,
     welcomeMessageHelp,
@@ -102,6 +104,7 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
     const client = await auth.getClient();
     const googleSheets = google.sheets({ version: "v4", auth: client });
+    
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
     const getRows = await googleSheets.spreadsheets.values.get({
@@ -252,55 +255,13 @@ bot.onText(/\/productos/, async (msg) => {  // /start
                         console.log(pc.bgRed(`Eligieron ${option} `))
 
                        /*  if (option != null) {
-                            PaymentMethod()
+                            PaymentMethod() -> create function to call it later
 
                         } */
                     });
                 },
                 500);
-        }//Delivery
-
-/*         function PaymentMethod() {
-            console.log('paymentMethod ok')
-
-            setTimeout(
-                function () {
-
-                    bot.sendMessage(chatId, '¿Cómo querès pagar tu pedido?', {
-                        reply_markup: JSON.stringify({
-                            inline_keyboard: [
-                                [
-                                    { text: 'Efectivo', callback_data: 'pago_efectivo' },
-                                    { text: 'Transferencia', callback_data: 'pago_transferencia' }
-                                ]
-                            ]
-                        })
-                    });
-
-                    bot.on('callback_query', (query) => {
-                        const chatId = query.message.chat.id;
-                        const metodoPago = query.data;
-                
-                        // Aquí puedes realizar acciones basadas en el método de pago seleccionado
-                        let metodoPagoMensaje = 'xd';
-                        console.log(pc.bgMagenta(`METODO DE PAGO ELEGIDO ${metodoPago}`))
-                        if (metodoPago === 'pago_efectivo') {
-                            metodoPagoMensaje = 'Elegiste pagar en efectivo. Por favor, prepara el pago en efectivo para el momento de la entrega.';
-                        } else if (metodoPago === 'pago_transferencia') {
-                            metodoPagoMensaje = `Elegiste pagar por transferencia. Te proporcionaremos los detalles bancarios para la transferencia. \n
-                            CVU -> ${cvu}`;
-                        }
-                
-                        // Enviar el mensaje sobre el método de pago seleccionado
-                        bot.sendMessage(chatId, `${metodoPagoMensaje}`);
-                    });
-
-
-
-
-
-                }, 500);
-        } //PAYMENT */
+        }
 
 
     }) //selected products
@@ -314,6 +275,30 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
 
 
+bot.onText(/\/stock/, async (msg) => {  // /start
+    const chatId = msg.chat.id;
+
+    // Obtener los datos de Google Sheets 
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "secret.json",
+        scopes: "https://www.googleapis.com/auth/spreadsheets",
+    });
+
+    const client = await auth.getClient();
+    const googleSheets = google.sheets({ version: "v4", auth: client });
+    
+    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+
+    const getRows = await googleSheets.spreadsheets.values.get({
+        auth,
+        spreadsheetId,
+        range: "stock&price!A2:E6",
+    });
+})
+
+
+
+
 bot.onText(/\/ayuda/, async (msg) => {
     const chatId = msg.chat.id;
     console.log(pc.bgBlue('HELP MSSG SENT'))
@@ -321,4 +306,11 @@ bot.onText(/\/ayuda/, async (msg) => {
     bot.sendMessage(chatId, `${ayuda}`);
 });
 
+
+bot.onText(/\/envios/, async (msg) => {
+    const chatId = msg.chat.id;
+    console.log(pc.bgBlue('DELI MSSG SENT'))
+    // send a message to the chat acknowledging receipt of their message
+    bot.sendMessage(chatId, `${enviosData}`);
+});
 
