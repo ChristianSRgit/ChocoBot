@@ -7,8 +7,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const Product = require('./js/constructors/product');
 const Venta = require('./js/constructors/venta');
 
-const { getGoogleSheetsInstance } = require('./js/googleSheets');
-const {ActualizarStockEnGoogleSheets,ActualizarPrecioEnGoogleSheets} = require('./js/updateStockAndPrice');
+const { ActualizarStockEnGoogleSheets, ActualizarPrecioEnGoogleSheets } = require('./js/updateStockAndPrice');
 
 const {
     telegramStart,
@@ -302,7 +301,8 @@ bot.onText(/\/stock/, async (msg) => {  // /start
         return new Product(product[1], product[2], product[3], product[4]);
     });
     const buttonsRow = productsSheetInfo.map((product, index) => ({
-        text: product.name, // Usar el nombre del producto como texto del botón
+        //SACAR TEMPLATE STRING POST TESTEO Y SOLO DEJAR PRODUCT NAME
+        text: `${product.name} stock_${index}`, // Usar el nombre del producto como texto del botón 
         callback_data: `stock_${index}`, // Usar el índice del producto como callback_data con un prefijo "stock_"
     }));
 
@@ -317,51 +317,62 @@ bot.onText(/\/stock/, async (msg) => {  // /start
         reply_markup: JSON.stringify(keyboard),
     });
 
+    let selectedProducts = [];
+
     // Manejar la selección de un producto para actualizar el stock
     bot.on("callback_query", async query => {
         const chatId = query.message.chat.id;
+        console.log(chatId);
 
         let productId = query.data.replace("stock_", ""); // Eliminar el prefijo "stock_"
         let selectedProduct = productsSheetInfo[productId]; // Obtener el producto seleccionado
+        console.log(productId);
 
-         
+        // Almacenar el producto seleccionado en el objeto selectedProducts con su propio valor de stock
+        selectedProducts[productId] = selectedProduct;
 
-          // Preguntar al usuario el nuevo valor de stock
+        // Preguntar al usuario el nuevo valor de stock
         bot.sendMessage(chatId, `Escribe el nuevo stock para el producto seleccionado ${selectedProduct.name}:`);
-
-        // Manejar la respuesta del usuario
-        bot.onText(/^(\d+)$/, async (msg, match) => {
-            const newStock = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
-
-        console.log(pc.bgBlue('Actualizando Stock'))
-           
-
-            ActualizarStockEnGoogleSheets(selectedProduct, newStock)
-
-            bot.sendMessage(chatId, `Stock actualizado para el producto ${selectedProduct.name}: ${newStock}`);
-        });
-
-       
-
-    })
-
-    }) // fin /stock
-
-
-
-
-    bot.onText(/\/ayuda/, async (msg) => {
-        const chatId = msg.chat.id;
-        console.log(pc.bgBlue('HELP MSSG SENT'))
-        // send a message to the chat acknowledging receipt of their message
-        bot.sendMessage(chatId, `${ayuda}`);
     });
 
-
-    bot.onText(/\/envios/, async (msg) => {
+    // Manejar la respuesta del usuario
+    bot.onText(/^(\d+)$/, async (msg, match) => {
         const chatId = msg.chat.id;
-        console.log(pc.bgBlue('DELI MSSG SENT'))
-        // send a message to the chat acknowledging receipt of their message
-        bot.sendMessage(chatId, `${enviosData}`);
+        let newStock = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
+
+        // Actualizar el stock para el producto seleccionado
+        for (const productId in selectedProducts) {
+            if (selectedProducts.hasOwnProperty(productId)) {
+                const product = selectedProducts[productId];
+                product.stock = newStock;
+
+                // Actualizar el stock solo para el producto seleccionado
+                ActualizarStockEnGoogleSheets([product], newStock);
+                bot.sendMessage(chatId, `Stock actualizado para el producto ${product.name}: ${newStock}`);
+            }
+        }
+
+        // Limpiar la lista de productos seleccionados
+        selectedProducts = {};
     });
+
+}) // fin /stock
+
+
+
+
+bot.onText(/\/ayuda/, async (msg) => {
+    const chatId = msg.chat.id;
+    console.log(pc.bgBlue('HELP MSSG SENT'))
+    // send a message to the chat acknowledging receipt of their message
+    bot.sendMessage(chatId, `${ayuda}`);
+});
+
+
+bot.onText(/\/envios/, async (msg) => {
+    const chatId = msg.chat.id;
+    console.log(pc.bgBlue('DELI MSSG SENT'))
+    // send a message to the chat acknowledging receipt of their message
+    bot.sendMessage(chatId, `${enviosData}`);
+});
 
