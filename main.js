@@ -320,17 +320,20 @@ bot.onText(/\/stock/, async (msg) => {  // /start
 
         // Limpiar la lista de productos seleccionados
         selectedProducts = {};
+
     });
 
 }) // fin /stock
 
 
-/* bot.onText(/\/precio/, async (msg) => {  // /start
+
+
+// Agrega un comando para actualizar el precio
+bot.onText(/\/precio/, async (msg) => {
     const chatId = msg.chat.id;
-    console.log(pc.bgYellow('price SECTION'))
+    console.log(pc.bgYellow('PRICE SECTION'));
 
-
-    // Obtener los datos de Google Sheets 
+    // Obtén los datos de Google Sheets
     const auth = new google.auth.GoogleAuth({
         keyFile: "secret.json",
         scopes: "https://www.googleapis.com/auth/spreadsheets",
@@ -344,70 +347,65 @@ bot.onText(/\/stock/, async (msg) => {  // /start
     const getRows = await googleSheets.spreadsheets.values.get({
         auth,
         spreadsheetId,
-        range: "stock&price!A2:E6",
+        range: "stock&price!A2:E6", // Ajusta el rango según tus necesidades
     });
 
     const productsSheetInfo = getRows.data.values.map(product => {
         return new Product(product[1], product[2], product[3], product[4]);
     });
     const buttonsRow = productsSheetInfo.map((product, index) => ({
-        //SACAR TEMPLATE STRING POST TESTEO Y SOLO DEJAR PRODUCT NAME
-        text: product.name, // Usar el nombre del producto como texto del botón 
-        callback_data: `price_${index}`, // Usar el índice del producto como callback_data con un prefijo "price"
+        text: product.name,
+        callback_data: `price_${index}`,
     }));
-
 
     const keyboard = {
         inline_keyboard: [buttonsRow],
     };
 
-
-    // Enviar el mensaje con el teclado inline de productos
     bot.sendMessage(chatId, 'Selecciona un producto para actualizar el precio:', {
         reply_markup: JSON.stringify(keyboard),
     });
 
     let selectedProducts = [];
 
-    // Manejar la selección de un producto para actualizar el precio
     bot.on("callback_query", async query => {
         const chatId = query.message.chat.id;
         console.log(chatId);
 
-        let productId = query.data.replace("price_", ""); // Eliminar el prefijo "price_"
-        let selectedProduct = productsSheetInfo[productId]; // Obtener el producto seleccionado
-        console.log(productId);
+        let productId = query.data.replace("price_", "");
+        let selectedProduct = productsSheetInfo[productId];
 
-        // Almacenar el producto seleccionado en el objeto selectedProducts con su propio valor de stock
         selectedProducts[productId] = selectedProduct;
 
         // Preguntar al usuario el nuevo valor de precio
         bot.sendMessage(chatId, `Escribe el nuevo precio para el producto seleccionado ${selectedProduct.name}:`);
     });
 
-    // Manejar la respuesta del usuario
-    bot.onText(/^(\d+)$/, async (msg, match) => {
+    bot.onText(/^(\d+(\.\d+)?)$/, async (msg, match) => {
         const chatId = msg.chat.id;
-        let newPrice = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
+        let newPrice = parseFloat(match[1]);
 
-        // Actualizar el stock para el producto seleccionado
+        // Actualizar el precio para el producto seleccionado
         for (const productId in selectedProducts) {
             if (selectedProducts.hasOwnProperty(productId)) {
                 const product = selectedProducts[productId];
                 product.price = newPrice;
 
-                // Actualizar el stock solo para el producto seleccionado
-                ActualizarStockEnGoogleSheets([product], newPrice);
-                bot.sendMessage(chatId, `Precio actualizado para el producto ${product.name}: ${newPrice}`);
+                // Actualizar el precio solo para el producto seleccionado en la columna 2 (C)
+                ActualizarPrecioEnGoogleSheets([product], newPrice);
+                bot.sendMessage(chatId, `Precio actualizado para el producto ${product.name}: $${newPrice}`);
             }
         }
 
         // Limpiar la lista de productos seleccionados
         selectedProducts = {};
     });
+});
 
-}) // fin PRECIO */
 
+
+
+//basics
 
 bot.onText(/\/ayuda/, async (msg) => {
     const chatId = msg.chat.id;
