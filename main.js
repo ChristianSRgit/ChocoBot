@@ -22,6 +22,7 @@ const {
 
 
 const botToken = process.env.botToken;
+const accesKey = process.env.PSSW
 
 const bot = new TelegramBot(botToken, { polling: true });
 const cvu = process.env.CVU;
@@ -243,85 +244,95 @@ bot.onText(/\/productos/, async (msg) => {  // /start
 
 bot.onText(/\/stock/, async (msg) => {  // /start
     const chatId = msg.chat.id;
-    console.log(pc.bgWhite('STOCK SECTION'))
+    const userId = msg.from.id;
+
+    // Verifica si el usuario ingresó la clave de acceso
+    if (msg.text === `/stock ${accesKey}`) {
+        // Usuario autorizado, permite el acceso a /stock
+        console.log(pc.bgWhite('STOCK SECTION'));
 
 
-    // Obtener los datos de Google Sheets 
-    const auth = new google.auth.GoogleAuth({
-        keyFile: "secret.json",
-        scopes: "https://www.googleapis.com/auth/spreadsheets",
-    });
+        // Obtener los datos de Google Sheets 
+        const auth = new google.auth.GoogleAuth({
+            keyFile: "secret.json",
+            scopes: "https://www.googleapis.com/auth/spreadsheets",
+        });
 
-    const client = await auth.getClient();
-    const googleSheets = google.sheets({ version: "v4", auth: client });
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: "v4", auth: client });
 
-    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
-    const getRows = await googleSheets.spreadsheets.values.get({
-        auth,
-        spreadsheetId,
-        range: "stock&price!A2:E6",
-    });
+        const getRows = await googleSheets.spreadsheets.values.get({
+            auth,
+            spreadsheetId,
+            range: "stock&price!A2:E6",
+        });
 
-    const productsSheetInfo = getRows.data.values.map(product => {
-        return new Product(product[1], product[2], product[3], product[4]);
-    });
-    const buttonsRow = productsSheetInfo.map((product, index) => ({
-        //SACAR TEMPLATE STRING POST TESTEO Y SOLO DEJAR PRODUCT NAME
-        text: product.name, // Usar el nombre del producto como texto del botón 
-        callback_data: `stock_${index}`, // Usar el índice del producto como callback_data con un prefijo "stock_"
-    }));
-
-
-    const keyboard = {
-        inline_keyboard: [buttonsRow],
-    };
+        const productsSheetInfo = getRows.data.values.map(product => {
+            return new Product(product[1], product[2], product[3], product[4]);
+        });
+        const buttonsRow = productsSheetInfo.map((product, index) => ({
+            //SACAR TEMPLATE STRING POST TESTEO Y SOLO DEJAR PRODUCT NAME
+            text: product.name, // Usar el nombre del producto como texto del botón 
+            callback_data: `stock_${index}`, // Usar el índice del producto como callback_data con un prefijo "stock_"
+        }));
 
 
-    // Enviar el mensaje con el teclado inline de productos
-    bot.sendMessage(chatId, 'Selecciona un producto para actualizar el stock:', {
-        reply_markup: JSON.stringify(keyboard),
-    });
+        const keyboard = {
+            inline_keyboard: [buttonsRow],
+        };
 
-    let selectedProducts = [];
 
-    // Manejar la selección de un producto para actualizar el stock
-    bot.on("callback_query", async query => {
-        const chatId = query.message.chat.id;
-        console.log(chatId);
+        // Enviar el mensaje con el teclado inline de productos
+        bot.sendMessage(chatId, 'Selecciona un producto para actualizar el stock:', {
+            reply_markup: JSON.stringify(keyboard),
+        });
 
-        let productId = query.data.replace("stock_", ""); // Eliminar el prefijo "stock_"
-        let selectedProduct = productsSheetInfo[productId]; // Obtener el producto seleccionado
-        console.log(productId);
+        let selectedProducts = [];
 
-        // Almacenar el producto seleccionado en el objeto selectedProducts con su propio valor de stock
-        selectedProducts[productId] = selectedProduct;
+        // Manejar la selección de un producto para actualizar el stock
+        bot.on("callback_query", async query => {
+            const chatId = query.message.chat.id;
+            console.log(chatId);
 
-        // Preguntar al usuario el nuevo valor de stock
-        bot.sendMessage(chatId, `Escribe el nuevo stock para el producto seleccionado ${selectedProduct.name}:`);
-    });
+            let productId = query.data.replace("stock_", ""); // Eliminar el prefijo "stock_"
+            let selectedProduct = productsSheetInfo[productId]; // Obtener el producto seleccionado
+            console.log(productId);
 
-    // Manejar la respuesta del usuario
-    bot.onText(/^(\d+)$/, async (msg, match) => {
-        const chatId = msg.chat.id;
-        let newStock = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
+            // Almacenar el producto seleccionado en el objeto selectedProducts con su propio valor de stock
+            selectedProducts[productId] = selectedProduct;
 
-        // Actualizar el stock para el producto seleccionado
-        for (const productId in selectedProducts) {
-            if (selectedProducts.hasOwnProperty(productId)) {
-                const product = selectedProducts[productId];
-                product.stock = newStock;
+            // Preguntar al usuario el nuevo valor de stock
+            bot.sendMessage(chatId, `Escribe el nuevo stock para el producto seleccionado ${selectedProduct.name}:`);
+        });
 
-                // Actualizar el stock solo para el producto seleccionado
-                ActualizarStockEnGoogleSheets([product], newStock);
-                bot.sendMessage(chatId, `Stock actualizado para el producto ${product.name}: ${newStock}`);
+        // Manejar la respuesta del usuario
+        bot.onText(/^(\d+)$/, async (msg, match) => {
+            const chatId = msg.chat.id;
+            let newStock = parseInt(match[1]); // Obtener el valor de stock ingresado por el usuario
+
+            // Actualizar el stock para el producto seleccionado
+            for (const productId in selectedProducts) {
+                if (selectedProducts.hasOwnProperty(productId)) {
+                    const product = selectedProducts[productId];
+                    product.stock = newStock;
+
+                    // Actualizar el stock solo para el producto seleccionado
+                    ActualizarStockEnGoogleSheets([product], newStock);
+                    bot.sendMessage(chatId, `Stock actualizado para el producto ${product.name}: ${newStock}`);
+                }
             }
-        }
 
-        // Limpiar la lista de productos seleccionados
-        selectedProducts = {};
+            // Limpiar la lista de productos seleccionados
+            selectedProducts = {};
 
-    });
+        });
+
+    } else {
+        // Usuario no autorizado, muestra un mensaje de error
+        bot.sendMessage(chatId, "Acceso denegado. Por favor, ingresa la clave de acceso válida. \n /stock + clave ");
+    }
 
 }) // fin /stock
 
@@ -331,77 +342,83 @@ bot.onText(/\/stock/, async (msg) => {  // /start
 // Agrega un comando para actualizar el precio
 bot.onText(/\/precio/, async (msg) => {
     const chatId = msg.chat.id;
-    console.log(pc.bgYellow('PRICE SECTION'));
+    // Verifica si el usuario ingresó la clave de acceso
+    if (msg.text === `/price ${accesKey}`) {
+        console.log(pc.bgYellow('PRICE SECTION'));
 
-    // Obtén los datos de Google Sheets
-    const auth = new google.auth.GoogleAuth({
-        keyFile: "secret.json",
-        scopes: "https://www.googleapis.com/auth/spreadsheets",
-    });
+        // Obtén los datos de Google Sheets
+        const auth = new google.auth.GoogleAuth({
+            keyFile: "secret.json",
+            scopes: "https://www.googleapis.com/auth/spreadsheets",
+        });
 
-    const client = await auth.getClient();
-    const googleSheets = google.sheets({ version: "v4", auth: client });
+        const client = await auth.getClient();
+        const googleSheets = google.sheets({ version: "v4", auth: client });
 
-    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
-    const getRows = await googleSheets.spreadsheets.values.get({
-        auth,
-        spreadsheetId,
-        range: "stock&price!A2:E6", // Ajusta el rango según tus necesidades
-    });
+        const getRows = await googleSheets.spreadsheets.values.get({
+            auth,
+            spreadsheetId,
+            range: "stock&price!A2:E6", // Ajusta el rango según tus necesidades
+        });
 
-    const productsSheetInfo = getRows.data.values.map(product => {
-        return new Product(product[1], product[2], product[3], product[4]);
-    });
-    const buttonsRow = productsSheetInfo.map((product, index) => ({
-        text: product.name,
-        callback_data: `price_${index}`,
-    }));
+        const productsSheetInfo = getRows.data.values.map(product => {
+            return new Product(product[1], product[2], product[3], product[4]);
+        });
+        const buttonsRow = productsSheetInfo.map((product, index) => ({
+            text: product.name,
+            callback_data: `price_${index}`,
+        }));
 
-    const keyboard = {
-        inline_keyboard: [buttonsRow],
-    };
+        const keyboard = {
+            inline_keyboard: [buttonsRow],
+        };
 
-    bot.sendMessage(chatId, 'Selecciona un producto para actualizar el precio:', {
-        reply_markup: JSON.stringify(keyboard),
-    });
+        bot.sendMessage(chatId, 'Selecciona un producto para actualizar el precio:', {
+            reply_markup: JSON.stringify(keyboard),
+        });
 
-    let selectedProducts = [];
+        let selectedProducts = [];
 
-    bot.on("callback_query", async query => {
-        const chatId = query.message.chat.id;
-        console.log(chatId);
+        bot.on("callback_query", async query => {
+            const chatId = query.message.chat.id;
+            console.log(chatId);
 
-        let productId = query.data.replace("price_", "");
-        let selectedProduct = productsSheetInfo[productId];
+            let productId = query.data.replace("price_", "");
+            let selectedProduct = productsSheetInfo[productId];
 
-        selectedProducts[productId] = selectedProduct;
+            selectedProducts[productId] = selectedProduct;
 
-        // Preguntar al usuario el nuevo valor de precio
-        bot.sendMessage(chatId, `Escribe el nuevo precio para el producto seleccionado ${selectedProduct.name}:`);
-    });
+            // Preguntar al usuario el nuevo valor de precio
+            bot.sendMessage(chatId, `Escribe el nuevo precio para el producto seleccionado ${selectedProduct.name}:`);
+        });
 
-    bot.onText(/^(\d+(\.\d+)?)$/, async (msg, match) => {
-        const chatId = msg.chat.id;
-        let newPrice = parseFloat(match[1]);
+        bot.onText(/^(\d+(\.\d+)?)$/, async (msg, match) => {
+            const chatId = msg.chat.id;
+            let newPrice = parseFloat(match[1]);
 
-        // Actualizar el precio para el producto seleccionado
-        for (const productId in selectedProducts) {
-            if (selectedProducts.hasOwnProperty(productId)) {
-                const product = selectedProducts[productId];
-                product.price = newPrice;
+            // Actualizar el precio para el producto seleccionado
+            for (const productId in selectedProducts) {
+                if (selectedProducts.hasOwnProperty(productId)) {
+                    const product = selectedProducts[productId];
+                    product.price = newPrice;
 
-                // Actualizar el precio solo para el producto seleccionado en la columna 2 (C)
-                ActualizarPrecioEnGoogleSheets([product], newPrice);
-                bot.sendMessage(chatId, `Precio actualizado para el producto ${product.name}: $${newPrice}`);
+                    // Actualizar el precio solo para el producto seleccionado en la columna 2 (C)
+                    ActualizarPrecioEnGoogleSheets([product], newPrice);
+                    bot.sendMessage(chatId, `Precio actualizado para el producto ${product.name}: $${newPrice}`);
+                }
             }
-        }
 
-        // Limpiar la lista de productos seleccionados
-        selectedProducts = {};
-    });
+            // Limpiar la lista de productos seleccionados
+            selectedProducts = {};
+        });
+    } else {
+        // Usuario no autorizado, muestra un mensaje de error
+        bot.sendMessage(chatId, "Acceso denegado. Por favor, ingresa la clave de acceso válida. \n /precio + clave ");
+    }
 });
-
+//fin price
 
 
 
