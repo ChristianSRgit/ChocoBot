@@ -304,7 +304,7 @@ bot.onText(/\/stock/, async (msg) => {  // /start
             selectedProducts[productId] = selectedProduct;
 
             // Preguntar al usuario el nuevo valor de stock
-            bot.sendMessage(chatId, `Escribe el nuevo stock para el producto seleccionado ${selectedProduct.name}:`);
+            bot.sendMessage(chatId, `Actualmente el stock es ${selectedProduct.stock} \n Escribe el nuevo stock para el producto seleccionado -> ${selectedProduct.name}`);
         });
 
         // Manejar la respuesta del usuario
@@ -343,7 +343,7 @@ bot.onText(/\/stock/, async (msg) => {  // /start
 bot.onText(/\/precio/, async (msg) => {
     const chatId = msg.chat.id;
     // Verifica si el usuario ingresó la clave de acceso
-    if (msg.text === `/price ${accesKey}`) {
+    if (msg.text === `/precio ${accesKey}`) {
         console.log(pc.bgYellow('PRICE SECTION'));
 
         // Obtén los datos de Google Sheets
@@ -391,7 +391,7 @@ bot.onText(/\/precio/, async (msg) => {
             selectedProducts[productId] = selectedProduct;
 
             // Preguntar al usuario el nuevo valor de precio
-            bot.sendMessage(chatId, `Escribe el nuevo precio para el producto seleccionado ${selectedProduct.name}:`);
+            bot.sendMessage(chatId, `Actualmente el precio es $${selectedProduct.price} \nEscribe el nuevo precio para el producto seleccionado -> ${selectedProduct.name}`);
         });
 
         bot.onText(/^(\d+(\.\d+)?)$/, async (msg, match) => {
